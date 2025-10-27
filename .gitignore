@@ -1,0 +1,14 @@
+# Virtual Environment
+venv/
+new_qlib_venv/
+
+# Python Caching
+__pycache__/
+*.pyc
+
+# OS Files
+.DS_Store
+
+# TensorFlow/Keras Checkpoints (Can be large)
+*.h5
+*.keras
