@@ -1,9 +1,11 @@
 import mongodb_client
+from correction_model import load_correction_model, CORRECTION_MODEL_PATH 
+import os 
+import numpy as np
 import yfinance as yf
 import pandas as pd
 from datetime import date, timedelta
 from sklearn.linear_model import LinearRegression
-import numpy as np
 from datetime import date, timedelta, datetime
 
 #Can change these to test different stocks
@@ -53,28 +55,51 @@ def generate_single_prediction(ticker, days_ahead):
     if df is None:
         return None
         
-    # 1. Prediction and Initial Data Setup
-    prediction_result = make_simple_prediction(df, days_ahead)
+    # --- 1. Primary Prediction (LinReg) ---
+    linreg_prediction_result = make_simple_prediction(df, days_ahead)
+    final_predicted_price = linreg_prediction_result['predicted_price']
+
+    # --- 2. Model Correction (The Improvement) ---
+    # Check if a corrected model exists to use
+    model_name = f"LinReg-{days_ahead}Day"
+    
+    if os.path.exists(CORRECTION_MODEL_PATH):
+        correction_model = load_correction_model()
+        if correction_model:
+            # Apply the correction: Primary prediction is input to the correction model
+            input_price = np.array([[final_predicted_price]])
+            corrected_price = correction_model.predict(input_price)[0].item()
+            
+            # Use the corrected price as the final output
+            final_predicted_price = round(corrected_price, 2)
+            model_name = f"LinReg-{days_ahead}Day-Corrected" # Track the corrected version
+            print(f"Correction applied. Final Price: ${final_predicted_price:.2f}")
+
+    # --- 3. Final BDA Document Setup ---
+    prediction_result = linreg_prediction_result 
+    
+    # Update the core prediction metrics with the FINAL, CORRECTED value
+    prediction_result['predicted_price'] = final_predicted_price 
     prediction_result['ticker'] = ticker 
-    prediction_result['model_version'] = f"LinReg-{days_ahead}Day" # Add the model version field
+    prediction_result['model_version'] = model_name # Save the variable model version
     prediction_result['actual_price'] = None
     prediction_result['prediction_error_pct'] = None
 
-    # 2. Get Live Collection Object (The fix for Streamlit)
+    # --- 4. MongoDB Insertion ---
     predictions_collection = mongodb_client.predictions_collection
     if predictions_collection is None:
         print("FATAL DB ERROR: MongoDB collection not available.")
         return None
 
     try:
-        # 3. Insert the full document
+        # Insert the final, corrected prediction into MongoDB
         result = predictions_collection.insert_one(
             {
                 "ticker": prediction_result['ticker'],
                 "prediction_date": prediction_result['prediction_date'],
                 "target_date": prediction_result['target_date'],
                 "predicted_price": prediction_result['predicted_price'],
-                "model_version": prediction_result['model_version'], # <-- THIS LINE IS NOW CORRECT
+                "model_version": prediction_result['model_version'],
                 "actual_price": prediction_result['actual_price'],
                 "prediction_error_pct": prediction_result['prediction_error_pct']
             }
