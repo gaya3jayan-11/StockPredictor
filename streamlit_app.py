@@ -24,14 +24,22 @@ selected_ticker = st.sidebar.selectbox(
     TICKER_OPTIONS,
     index=0 #Default AAPL
 )
+st.sidebar.markdown("---")
+days_to_predict = st.sidebar.slider(
+    "Prediction Horizon (Days Ahead):", 
+    min_value=1, 
+    max_value=30, 
+    value=7,  # Default to 7 days
+    step=1
+)
 
 #Backend Action Buttons
 st.sidebar.subheader("Run Prediction Engine")
 if st.sidebar.button(f"Generate & Save New Prediction for {selected_ticker}", type="primary"):
-    with st.spinner(f"Generating and saving prediction for {selected_ticker}..."):
-        result = generate_single_prediction(selected_ticker)
+    with st.spinner(f"Generating and saving {days_to_predict}-day prediction for {selected_ticker}..."):
+        result = generate_single_prediction(selected_ticker, days_to_predict) 
         if result:
-            st.sidebar.success(f"Prediction for {selected_ticker} saved to MongoDB. Target: {result['target_date']}")
+            st.sidebar.success(f"Prediction for {selected_ticker} saved. Target: {result['target_date']}")
         else:
             st.sidebar.error("Prediction failed or no data found.")
 
