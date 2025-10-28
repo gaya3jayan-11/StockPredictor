@@ -12,3 +12,6 @@ __pycache__/
 # TensorFlow/Keras Checkpoints (Can be large)
 *.h5
 *.keras
+
+# Secrets and Credentials
+.env

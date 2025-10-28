@@ -1,15 +1,19 @@
 from pymongo import MongoClient
 from datetime import datetime
-import certifi 
+import certifi
+import os 
 
-MONGO_URI = "mongodb://localhost:27017/" 
+MONGO_URI = os.getenv("ATLAS_URI") 
+if not MONGO_URI:
+    MONGO_URI = "mongodb://localhost:27017/" 
+    print("WARNING: Using fallback URI. Set ATLAS_URI environment variable.")
 
 DB_NAME = "stock_predictor_db"
 COLLECTION_NAME = "predictions"
 
 try:
     #Timeout to detect failure quickly
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
     client.admin.command('ping') 
 except Exception as e:
     print(f"Error initializing MongoClient: {e}")
