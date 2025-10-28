@@ -1,4 +1,4 @@
-# BDA Stock Predictor: MLOps & MongoDB Tracking 📈
+# BDA Stock Predictor
 
 **Repository:** https://github.com/gaya3jayan-11/StockPredictor.git
 
